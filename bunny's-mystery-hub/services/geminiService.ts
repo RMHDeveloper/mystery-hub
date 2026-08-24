@@ -3,7 +3,7 @@ import { Genre, MysteryCase } from '../types';
 // Helper function for exponential backoff delay
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-const OPENROUTER_MODEL = 'openrouter/free';
+const GEMINI_MODEL = 'gemini-3.6-flash';
 
 const buildPrompt = (genre: Genre): string => `You are a "Hardboiled Noir" Mystery Engine. Your goal is to generate high-stakes, atmospheric crime cases that keep the player on the edge of their seat.
 
@@ -17,46 +17,37 @@ NARRATIVE STYLE:
 3. Scene endings MUST use dramatic ellipses (...) to encourage clicking "Continue."
 4. HINTS: Provide one subtle hint for each scene. These hints should guide the player's thinking or draw attention to a detail without directly giving away the solution. They should be short, concise, and in the form of an observation or question, e.g., "Note the strange scorch mark on the floor."
 
-STRICT OUTPUT FORMAT:
-Return ONLY a valid JSON object. No markdown. No conversational filler. Adhere strictly to this schema:
-{
-  "title": "A Gritty Case Name",
-  "scenes": [
-    "Scene 1 text...",
-    "Scene 2 text...",
-    "Scene 3 text...",
-    "Scene 4 text..."
-  ],
-  "question": "A high-stakes final question (e.g., 'The killer is reaching for their gun. Who do you tackle?' or 'The clock is ticking. Who do you accuse before it's too late?')",
-  "options": ["Option A", "Option B", "Option C", "Option D"],
-  "correct_index": 0,
-  "explanation": "A dramatic reveal explaining how the Scene 4 clue proved the culprit's guilt, referencing the specific detail.",
-  "hints": [
-    "Hint for Scene 1...",
-    "Hint for Scene 2...",
-    "Hint for Scene 3...",
-    "Hint for Scene 4..."
-  ]
-}
 Ensure the 'correct_index' matches one of the provided options (0 for Option A, 1 for Option B, 2 for Option C, 3 for Option D). The explanation should be concise, dramatic, and clearly link back to the smoking gun clue from Scene 4. The mystery must be engaging and fit the specified genre: "${genre}".`;
 
-const extractJson = (raw: string): string => {
-  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : raw;
-  const start = candidate.indexOf('{');
-  const end = candidate.lastIndexOf('}');
-  if (start === -1 || end === -1) return candidate.trim();
-  return candidate.slice(start, end + 1).trim();
+export class RateLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RateLimitError';
+  }
+}
+
+const responseSchema = {
+  type: 'OBJECT',
+  properties: {
+    title: { type: 'STRING' },
+    scenes: { type: 'ARRAY', items: { type: 'STRING' } },
+    question: { type: 'STRING' },
+    options: { type: 'ARRAY', items: { type: 'STRING' } },
+    correct_index: { type: 'NUMBER' },
+    explanation: { type: 'STRING' },
+    hints: { type: 'ARRAY', items: { type: 'STRING' } },
+  },
+  required: ['title', 'scenes', 'question', 'options', 'correct_index', 'explanation', 'hints'],
 };
 
 export const generateMysteryCase = async (genre: Genre): Promise<MysteryCase> => {
-  if (!process.env.OPENROUTER_API_KEY) {
-    throw new Error("OPENROUTER_API_KEY environment variable is not set.");
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is not set.");
   }
 
   const MAX_RETRIES = 3;
   const INITIAL_BACKOFF_DELAY_MS = 1000; // 1 second
-  const REQUEST_TIMEOUT_MS = 20000; // free-tier models can be slow or hang; fail fast and retry
+  const REQUEST_TIMEOUT_MS = 20000;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -64,24 +55,24 @@ export const generateMysteryCase = async (genre: Genre): Promise<MysteryCase> =>
       const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
       let response: Response;
       try {
-        response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: OPENROUTER_MODEL,
-            messages: [{ role: 'user', content: buildPrompt(genre) }],
-            response_format: { type: 'json_object' },
-            max_tokens: 3500,
-            provider: { sort: 'latency' },
-          }),
-          signal: controller.signal,
-        });
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: buildPrompt(genre) }] }],
+              generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema,
+              },
+            }),
+            signal: controller.signal,
+          }
+        );
       } catch (fetchError) {
         if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          throw new Error(`OpenRouter request timed out after ${REQUEST_TIMEOUT_MS / 1000}s.`);
+          throw new Error(`Gemini request timed out after ${REQUEST_TIMEOUT_MS / 1000}s.`);
         }
         throw fetchError;
       } finally {
@@ -90,17 +81,22 @@ export const generateMysteryCase = async (genre: Genre): Promise<MysteryCase> =>
 
       if (!response.ok) {
         const errBody = await response.text();
-        throw new Error(`OpenRouter request failed (${response.status}): ${errBody}`);
+
+        if (response.status === 429) {
+          // Retrying won't help until the quota window resets, so fail immediately instead of burning all attempts.
+          throw new RateLimitError("Gemini's free-tier request limit has been reached. Please wait a bit and try again, or use a key with more quota.");
+        }
+
+        throw new Error(`Gemini request failed (${response.status}): ${errBody}`);
       }
 
       const data = await response.json();
-      const content = data?.choices?.[0]?.message?.content;
+      const content = data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!content) {
-        throw new Error('OpenRouter response contained no content.');
+        throw new Error('Gemini response contained no content.');
       }
 
-      const jsonStr = extractJson(content);
-      const mysteryCase: MysteryCase = JSON.parse(jsonStr);
+      const mysteryCase: MysteryCase = JSON.parse(content);
 
       // Basic validation to ensure the generated JSON matches the schema
       if (
@@ -122,6 +118,9 @@ export const generateMysteryCase = async (genre: Genre): Promise<MysteryCase> =>
 
       return mysteryCase; // If successful, return the case
     } catch (error) {
+      if (error instanceof RateLimitError) {
+        throw error;
+      }
       console.error(`Attempt ${attempt} failed to generate mystery case:`, error);
       if (attempt < MAX_RETRIES) {
         const backoffDelay = INITIAL_BACKOFF_DELAY_MS * Math.pow(2, attempt - 1);

@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Genre, MysteryCase } from './types';
-import { generateMysteryCase } from './services/geminiService';
+import { generateMysteryCase, RateLimitError } from './services/geminiService';
 import GenreSelector from './components/GenreSelector';
 import MysteryGame from './components/MysteryGame';
 import LoadingScreen from './components/LoadingScreen'; // Import the new LoadingScreen
@@ -27,8 +27,12 @@ const App: React.FC = () => {
       setMysteryCase(generatedMystery);
     } catch (err) {
       console.error("Failed to generate mystery:", err);
-      setError(`Failed to generate mystery case. Please try again.
+      if (err instanceof RateLimitError) {
+        setError(err.message);
+      } else {
+        setError(`Failed to generate mystery case. Please try again.
         Details: ${err instanceof Error ? err.message : String(err)}`);
+      }
       setSelectedGenre(null); // Allow selecting genre again
     } finally {
       setLoading(false); // Reset loading after AI generation
