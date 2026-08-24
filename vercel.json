@@ -1,5 +1,5 @@
 {
-  "installCommand": "echo Skipping root install (project lives in bunny's-mystery-hub)",
+  "installCommand": "echo skipping-root-install",
   "buildCommand": "cd \"bunny's-mystery-hub\" && npm install && npm run build",
   "outputDirectory": "bunny's-mystery-hub/dist"
 }
