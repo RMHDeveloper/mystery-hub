@@ -90,19 +90,19 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
   const showHintSectionForQuestion = !isSceneActive && mystery.hints && mystery.hints[3]; 
 
   return (
-    <div className="relative w-full h-screen flex flex-col items-center justify-between py-1 px-4 font-sans overflow-hidden">
+    <div className="relative w-full min-h-screen flex flex-col items-center justify-between py-1 px-4 font-sans overflow-y-auto">
       {/* Background Image */}
-      <div 
-        className="absolute inset-0 z-0 bg-cover bg-center" 
+      <div
+        className="fixed inset-0 z-0 bg-cover bg-center"
         style={{ backgroundImage: `url('https://rabbitmarketinghouse.in/webinar/assets/scene-bg.jpg')` }}
       ></div>
       {/* Dark Overlay */}
-      <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/70 to-transparent"></div>
+      <div className="fixed inset-0 z-10 bg-gradient-to-t from-black via-black/70 to-transparent"></div>
 
       {/* Header */}
       <Header onRestart={onRestart} />
 
-      {/* Main Content Area - removed flex-1 and overflow-y-auto */}
+      {/* Main Content Area */}
       <div className="relative z-20 flex flex-col items-center justify-center gap-y-2 w-full max-w-lg lg:max-w-xl px-4 mt-4">
         {/* Scene Progress Indicators */}
         {currentSceneIndex < mystery.scenes.length + 1 && ( // +1 to show dots even for question screen
@@ -131,6 +131,21 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
             <p className="text-gray-200 text-base md:text-lg leading-relaxed whitespace-pre-wrap text-left">
               {mystery.scenes[currentSceneIndex]}
             </p>
+
+            {/* Hint Button and Display for the current scene */}
+            {mystery.hints && mystery.hints[currentSceneIndex] && (
+              <div className="w-full flex flex-col items-center gap-y-2 mt-6">
+                <Button onClick={toggleHint} variant="outline-neon" className="px-8 py-2 text-sm">
+                  {showHint ? 'HIDE HINT' : 'SHOW HINT'}
+                </Button>
+                {showHint && (
+                  <div className="w-full p-4 bg-gray-800 bg-opacity-70 backdrop-blur-sm
+                                  rounded-xl border border-dashed border-yellow-500 shadow-[0_0_10px_rgba(252,211,77,0.4)] text-yellow-300 text-sm italic text-left">
+                    {mystery.hints[currentSceneIndex]}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           // Question and Options Display

@@ -1,17 +1,11 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { Genre, MysteryCase } from '../types';
 
 // Helper function for exponential backoff delay
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-export const generateMysteryCase = async (genre: Genre): Promise<MysteryCase> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable is not set.");
-  }
+const OPENROUTER_MODEL = 'openrouter/free';
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-  const prompt = `You are a "Hardboiled Noir" Mystery Engine. Your goal is to generate high-stakes, atmospheric crime cases that keep the player on the edge of their seat.
+const buildPrompt = (genre: Genre): string => `You are a "Hardboiled Noir" Mystery Engine. Your goal is to generate high-stakes, atmospheric crime cases that keep the player on the edge of their seat.
 
 NARRATIVE STYLE:
 1. TONE: Gritty, suspenseful, and professional. Use simple, easy-to-understand English for the scenes. Avoid overly complex vocabulary or sentence structures. Use sensory details (e.g., "the smell of stale cigarettes," "the flicker of a broken neon sign," "the cold steel of a forgotten gun").
@@ -35,7 +29,7 @@ Return ONLY a valid JSON object. No markdown. No conversational filler. Adhere s
   ],
   "question": "A high-stakes final question (e.g., 'The killer is reaching for their gun. Who do you tackle?' or 'The clock is ticking. Who do you accuse before it's too late?')",
   "options": ["Option A", "Option B", "Option C", "Option D"],
-  "correct_index": 0, // 0 for Option A, 1 for Option B, 2 for Option C, 3 for Option D
+  "correct_index": 0,
   "explanation": "A dramatic reveal explaining how the Scene 4 clue proved the culprit's guilt, referencing the specific detail.",
   "hints": [
     "Hint for Scene 1...",
@@ -44,36 +38,68 @@ Return ONLY a valid JSON object. No markdown. No conversational filler. Adhere s
     "Hint for Scene 4..."
   ]
 }
-Ensure the 'correct_index' matches one of the provided options. The explanation should be concise, dramatic, and clearly link back to the smoking gun clue from Scene 4. The mystery must be engaging and fit the specified genre: "${genre}".`;
+Ensure the 'correct_index' matches one of the provided options (0 for Option A, 1 for Option B, 2 for Option C, 3 for Option D). The explanation should be concise, dramatic, and clearly link back to the smoking gun clue from Scene 4. The mystery must be engaging and fit the specified genre: "${genre}".`;
+
+const extractJson = (raw: string): string => {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced ? fenced[1] : raw;
+  const start = candidate.indexOf('{');
+  const end = candidate.lastIndexOf('}');
+  if (start === -1 || end === -1) return candidate.trim();
+  return candidate.slice(start, end + 1).trim();
+};
+
+export const generateMysteryCase = async (genre: Genre): Promise<MysteryCase> => {
+  if (!process.env.OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY environment variable is not set.");
+  }
 
   const MAX_RETRIES = 3;
   const INITIAL_BACKOFF_DELAY_MS = 1000; // 1 second
+  const REQUEST_TIMEOUT_MS = 20000; // free-tier models can be slow or hang; fail fast and retry
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [{ parts: [{ text: prompt }] }],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              scenes: { type: Type.ARRAY, items: { type: Type.STRING } },
-              question: { type: Type.STRING },
-              options: { type: Type.ARRAY, items: { type: Type.STRING } },
-              correct_index: { type: Type.NUMBER },
-              explanation: { type: Type.STRING },
-              hints: { type: Type.ARRAY, items: { type: Type.STRING } }, // Added hints to schema
-            },
-            required: ["title", "scenes", "question", "options", "correct_index", "explanation", "hints"], // Added hints to required
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      let response: Response;
+      try {
+        response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+            'Content-Type': 'application/json',
           },
-          thinkingConfig: { thinkingBudget: 0 } // Added to prioritize faster generation
-        },
-      });
+          body: JSON.stringify({
+            model: OPENROUTER_MODEL,
+            messages: [{ role: 'user', content: buildPrompt(genre) }],
+            response_format: { type: 'json_object' },
+            max_tokens: 3500,
+            provider: { sort: 'latency' },
+          }),
+          signal: controller.signal,
+        });
+      } catch (fetchError) {
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          throw new Error(`OpenRouter request timed out after ${REQUEST_TIMEOUT_MS / 1000}s.`);
+        }
+        throw fetchError;
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
-      const jsonStr = response.text.trim();
+      if (!response.ok) {
+        const errBody = await response.text();
+        throw new Error(`OpenRouter request failed (${response.status}): ${errBody}`);
+      }
+
+      const data = await response.json();
+      const content = data?.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new Error('OpenRouter response contained no content.');
+      }
+
+      const jsonStr = extractJson(content);
       const mysteryCase: MysteryCase = JSON.parse(jsonStr);
 
       // Basic validation to ensure the generated JSON matches the schema
@@ -88,8 +114,8 @@ Ensure the 'correct_index' matches one of the provided options. The explanation 
         mysteryCase.correct_index < 0 ||
         mysteryCase.correct_index > 3 ||
         !mysteryCase.explanation ||
-        !Array.isArray(mysteryCase.hints) || // Validate hints array
-        mysteryCase.hints.length !== 4 // Ensure 4 hints
+        !Array.isArray(mysteryCase.hints) ||
+        mysteryCase.hints.length !== 4
       ) {
         throw new Error("Invalid mystery case structure received from API.");
       }

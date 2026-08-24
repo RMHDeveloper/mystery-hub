@@ -79,7 +79,7 @@ const buttonsConfig: ButtonConfig[] = [
 
 const GenreSelector: React.FC<GenreSelectorProps> = ({ onSelectGenre, disabled, onRestart }) => {
   return (
-    <div className="relative w-full h-full min-h-[calc(100vh-2rem)] bg-gradient-to-br from-gray-900 to-black overflow-hidden flex flex-col items-center justify-start pt-8 pb-4">
+    <div className="relative w-full min-h-screen bg-gradient-to-br from-gray-900 to-black overflow-x-hidden flex flex-col items-center justify-start pt-8 pb-4">
       {/* Background overlay/effect */}
       <div className="absolute inset-0 bg-gray-950 opacity-80 z-0"></div>
       <div className="absolute inset-0 z-0 opacity-20" style={{
