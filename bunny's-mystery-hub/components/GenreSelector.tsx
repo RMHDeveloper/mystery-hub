@@ -79,7 +79,7 @@ const buttonsConfig: ButtonConfig[] = [
 
 const GenreSelector: React.FC<GenreSelectorProps> = ({ onSelectGenre, disabled, onRestart }) => {
   return (
-    <div className="relative w-full min-h-screen bg-gradient-to-br from-gray-900 to-black overflow-x-hidden flex flex-col items-center justify-start pt-8 pb-4">
+    <div className="relative w-full h-screen overflow-hidden bg-gradient-to-br from-gray-900 to-black flex flex-col items-center justify-center gap-2 px-4">
       {/* Background overlay/effect */}
       <div className="absolute inset-0 bg-gray-950 opacity-80 z-0"></div>
       <div className="absolute inset-0 z-0 opacity-20" style={{
@@ -87,31 +87,33 @@ const GenreSelector: React.FC<GenreSelectorProps> = ({ onSelectGenre, disabled, 
       }}></div>
 
       {/* Top Bar: Logo, Digital Detective Text, Refresh Icon */}
-      <Header onRestart={onRestart} />
+      <div className="absolute top-0 left-0 w-full">
+        <Header onRestart={onRestart} />
+      </div>
 
       {/* Central Brain/Magnifying Glass Image */}
-      <div className="relative z-10 mb-8">
+      <div className="relative z-10">
         <img
           src="https://rabbitmarketinghouse.in/webinar/assets/Screenshot%202026-01-13%20115710.png"
           alt="Brain with Magnifying Glass"
-          className="w-36 h-36 md:w-48 md:h-48 object-contain animate-pulse-light"
+          className="w-16 h-16 md:w-20 md:h-20 object-contain animate-pulse-light"
         />
       </div>
 
       {/* Content for Genre Selection */}
       <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-lg">
-        <h2 className="text-2xl font-light text-gray-200 tracking-widest uppercase mb-8 text-center">
+        <h2 className="text-lg font-light text-gray-200 tracking-widest uppercase mb-3 text-center">
           CHOOSE YOUR MYSTERY:
         </h2>
 
         {/* Genre Selection Grid (3 columns for 6 options) */}
-        <div className="grid grid-cols-3 gap-4 px-4 w-full">
+        <div className="grid grid-cols-3 gap-2.5 px-4 w-full">
           {buttonsConfig.map((button) => (
             <Button
               key={button.id}
               onClick={() => button.genre && onSelectGenre(button.genre)}
               disabled={disabled || button.disabled}
-              className={`flex flex-col items-center justify-center p-2 h-28 md:h-32 text-center text-sm font-bold uppercase
+              className={`flex flex-col items-center justify-center p-2 h-16 md:h-20 text-center text-sm font-bold uppercase
                 bg-gray-700 bg-opacity-20 backdrop-filter backdrop-blur-sm
                 border-2 ${button.borderColor} rounded-lg
                 hover:bg-opacity-40 transition-all duration-300 ease-in-out
@@ -124,7 +126,7 @@ const GenreSelector: React.FC<GenreSelectorProps> = ({ onSelectGenre, disabled, 
           ))}
         </div>
         {disabled && ( // Display loading indicator when AI is generating a mystery
-          <div className="flex space-x-2 mt-8">
+          <div className="flex space-x-2 mt-3">
             <div className="h-3 w-3 bg-indigo-500 rounded-full animate-bounce-dot-1"></div>
             <div className="h-3 w-3 bg-indigo-500 rounded-full animate-bounce-dot-2"></div>
             <div className="h-3 w-3 bg-indigo-500 rounded-full animate-bounce-dot-3"></div>

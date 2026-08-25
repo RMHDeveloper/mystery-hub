@@ -27,7 +27,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ isCorrect, mystery, onRestart }
   }, []);
 
   return (
-    <div className="relative w-full min-h-screen bg-black flex flex-col items-center overflow-x-hidden font-sans">
+    <div className="relative w-full h-screen overflow-hidden bg-black flex flex-col items-center font-sans">
       {/* 1. INJECTED CSS ANIMATIONS */}
       <style>{`
         @keyframes fall {
@@ -45,11 +45,11 @@ const ResultPage: React.FC<ResultPageProps> = ({ isCorrect, mystery, onRestart }
       `}</style>
 
       {/* 2. GLOBAL HEADER */}
-      <div className="w-full p-4 flex justify-start items-center z-50 bg-black/60 backdrop-blur-md border-b border-white/10">
+      <div className="shrink-0 w-full p-3 flex justify-start items-center z-50 bg-black/60 backdrop-blur-md border-b border-white/10">
         <img
           src="https://rabbitmarketinghouse.in/webinar/assets/crimelogo-removebg-preview.png"
           alt="Digital Detective Logo"
-          className="h-16 w-auto"
+          className="h-10 w-auto"
         />
         {/* Removed onRestart button */}
       </div>
@@ -69,37 +69,39 @@ const ResultPage: React.FC<ResultPageProps> = ({ isCorrect, mystery, onRestart }
       {/* 4. CONFETTI */}
       {isCorrect && <div className="absolute inset-0 z-20 pointer-events-none">{confettiPieces}</div>}
 
-      {/* 5. MAIN CONTENT */}
-      <div className="relative z-30 flex flex-col items-center justify-center flex-1 px-8 text-center">
+      {/* 5. MAIN CONTENT - scrolls internally so header/button never move */}
+      <div className="relative z-30 flex-1 min-h-0 w-full overflow-y-auto flex flex-col items-center justify-center px-8 text-center">
         {isCorrect ? (
           <>
             <img
               src="https://rabbitmarketinghouse.in/webinar/assets/winner.png"
               alt="Winner Trophy"
-              className="w-64 h-auto mb-6 drop-shadow-[0_0_20px_rgba(234,179,8,0.6)]"
+              className="w-32 h-auto mb-3 drop-shadow-[0_0_20px_rgba(234,179,8,0.6)]"
             />
           </>
         ) : (
           <>
-            <div className="mb-10 text-yellow-600/50">
-              <svg className="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="mb-3 text-yellow-600/50">
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 <circle cx="10" cy="10" r="3" strokeWidth="1" />
                 <path d="M7 10h6" strokeWidth="1" />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold text-white tracking-widest mb-6 uppercase">Not Quite!</h2>
+            <h2 className="text-xl font-bold text-white tracking-widest mb-3 uppercase">Not Quite!</h2>
           </>
         )}
 
-        <p className="text-sm sm:text-base text-gray-200 leading-relaxed max-w-sm mb-12">
+        <p className="text-xs sm:text-sm text-gray-200 leading-relaxed max-w-sm mb-4">
           <span className={`font-bold ${isCorrect ? 'text-yellow-400' : 'text-cyan-400'}`}>
             {isCorrect ? 'CORRECT! ' : 'Keep investigating, Detective. '}
           </span>
           {mystery.explanation}
         </p>
+      </div>
 
-        {/* 6. NEON START BUTTON */}
+      {/* 6. NEON START BUTTON - fixed, always visible */}
+      <div className="relative z-30 shrink-0 pb-6">
         <Button variant="neonGreen" onClick={onRestart}>
           Start New Case
         </Button>

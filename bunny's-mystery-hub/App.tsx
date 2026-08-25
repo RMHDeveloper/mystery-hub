@@ -51,7 +51,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="relative flex flex-col items-center w-full min-h-screen">
+    <div className="relative flex flex-col items-center w-full h-screen overflow-hidden">
       {error && (
         <div className="absolute top-4 w-full max-w-lg p-4 bg-red-800 text-white rounded-lg shadow-lg text-center z-50">
           <p className="font-semibold">Error:</p>

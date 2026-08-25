@@ -6,14 +6,14 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onRestart }) => {
   return (
-    <div className="relative w-full px-4 py-3 flex justify-between items-center z-20 mb-2 max-w-lg md:max-w-3xl lg:max-w-4xl">
+    <div className="relative w-full px-4 py-2 flex justify-between items-center z-20 mx-auto max-w-lg md:max-w-3xl lg:max-w-4xl">
       <div className="flex items-center space-x-2">
         <img
           src="https://rabbitmarketinghouse.in/webinar/assets/crimelogo-removebg-preview.png"
           alt="Bunny's Mystery Hub Logo"
-          className="h-10 w-auto"
+          className="h-8 w-auto"
         />
-        <span className="text-gray-100 text-lg font-semibold tracking-wide">Bunny's Mystery Hub</span>
+        <span className="text-gray-100 text-sm font-semibold tracking-wide">Bunny's Mystery Hub</span>
       </div>
       <button
         onClick={onRestart}

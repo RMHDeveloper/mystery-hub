@@ -7,7 +7,7 @@ interface LoadingScreenProps {
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({ onStartGame }) => {
   return (
-    <div className="relative w-full min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-black overflow-x-hidden font-sans">
+    <div className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-black font-sans">
       {/* Background overlay/effect */}
       <div className="absolute inset-0 bg-gray-950 opacity-80 z-0"></div>
       <div className="absolute inset-0 z-0 opacity-20" style={{
@@ -20,17 +20,17 @@ const LoadingScreen: React.FC<LoadingScreenProps> = ({ onStartGame }) => {
         <img
           src="https://rabbitmarketinghouse.in/webinar/assets/crimelogo-removebg-preview.png"
           alt="Bunny's Mystery Hub Logo"
-          className="h-32 w-auto mb-6 md:h-48 animate-pulse-light drop-shadow-[0_0_20px_rgba(6,182,212,0.8)]"
+          className="h-20 w-auto mb-4 md:h-28 animate-pulse-light drop-shadow-[0_0_20px_rgba(6,182,212,0.8)]"
         />
 
         {/* Title */}
-        <h1 className="text-5xl md:text-7xl font-bold uppercase text-cyan-400 tracking-widest text-center mb-12
+        <h1 className="text-3xl md:text-5xl font-bold uppercase text-cyan-400 tracking-widest text-center mb-6
                        drop-shadow-[0_0_25px_rgba(6,182,212,0.9)]">
           Bunny's Mystery Hub
         </h1>
 
         {/* Start Button */}
-        <Button onClick={onStartGame} variant="neon" className="px-12 py-5 text-xl">
+        <Button onClick={onStartGame} variant="neon" className="px-10 py-3 text-lg">
           Start New Case
         </Button>
       </div>
