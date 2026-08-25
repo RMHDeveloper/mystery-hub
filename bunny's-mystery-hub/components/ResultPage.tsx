@@ -27,7 +27,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ isCorrect, mystery, onRestart }
   }, []);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-black flex flex-col items-center font-sans">
+    <div className="relative w-full h-screen h-[100dvh] overflow-hidden bg-black flex flex-col items-center font-sans">
       {/* 1. INJECTED CSS ANIMATIONS */}
       <style>{`
         @keyframes fall {

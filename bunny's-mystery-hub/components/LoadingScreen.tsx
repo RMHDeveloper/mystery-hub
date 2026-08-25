@@ -7,7 +7,7 @@ interface LoadingScreenProps {
 
 const LoadingScreen: React.FC<LoadingScreenProps> = ({ onStartGame }) => {
   return (
-    <div className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-black font-sans">
+    <div className="relative w-full h-screen h-[100dvh] overflow-hidden flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-black font-sans">
       {/* Background overlay/effect */}
       <div className="absolute inset-0 bg-gray-950 opacity-80 z-0"></div>
       <div className="absolute inset-0 z-0 opacity-20" style={{
