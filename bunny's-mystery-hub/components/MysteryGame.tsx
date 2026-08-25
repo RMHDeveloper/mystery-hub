@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { MysteryCase } from '../types';
 import Button from './Button';
 import ResultPage from './ResultPage';
@@ -9,22 +9,32 @@ interface MysteryGameProps {
   onRestart: () => void;
 }
 
+const SCENE_DURATION_SECONDS = 13;
+
 const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
-  const [timer, setTimer] = useState(13); // Placeholder timer
+  const [timer, setTimer] = useState(SCENE_DURATION_SECONDS);
   const [showHint, setShowHint] = useState(false); // Re-added state for hint visibility
+  const sceneStartRef = useRef(Date.now());
 
-  // Effect for placeholder timer
+  // Timer is derived from wall-clock elapsed time rather than counted in ticks,
+  // so it stays correct even when mobile browsers throttle setInterval while the
+  // screen is locked or the tab is backgrounded (which otherwise causes the
+  // countdown to skip/jump instead of ticking down evenly).
   useEffect(() => {
-    // We only need the timer for the scene display
-    if (currentSceneIndex < mystery.scenes.length) {
-      const interval = setInterval(() => {
-        setTimer(prev => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
-      return () => clearInterval(interval);
-    }
+    if (currentSceneIndex >= mystery.scenes.length) return;
+
+    sceneStartRef.current = Date.now();
+    setTimer(SCENE_DURATION_SECONDS);
+
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - sceneStartRef.current) / 1000);
+      setTimer(Math.max(SCENE_DURATION_SECONDS - elapsed, 0));
+    };
+    const interval = setInterval(tick, 250);
+    return () => clearInterval(interval);
   }, [currentSceneIndex, mystery.scenes.length]);
 
   // Effect to reset hint visibility when scene changes
@@ -35,7 +45,6 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
   const handleAnalyzeClick = useCallback(() => {
     if (currentSceneIndex < mystery.scenes.length - 1) {
       setCurrentSceneIndex(prev => prev + 1);
-      setTimer(13); // Reset timer for next scene
     } else if (currentSceneIndex === mystery.scenes.length - 1) {
       setCurrentSceneIndex(mystery.scenes.length); // Move to the question state
       setTimer(0); // Stop timer when moving to question
@@ -52,7 +61,6 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
   const previousScene = useCallback(() => {
     if (currentSceneIndex > 0) {
       setCurrentSceneIndex(prev => prev - 1);
-      setTimer(13); // Reset timer for previous scene
     }
   }, [currentSceneIndex]);
 
