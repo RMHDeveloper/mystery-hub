@@ -18,29 +18,7 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
   const [timer, setTimer] = useState(SCENE_DURATION_SECONDS);
   const [showHint, setShowHint] = useState(false); // Re-added state for hint visibility
   const sceneStartRef = useRef(Date.now());
-
-  // Timer is derived from wall-clock elapsed time rather than counted in ticks,
-  // so it stays correct even when mobile browsers throttle setInterval while the
-  // screen is locked or the tab is backgrounded (which otherwise causes the
-  // countdown to skip/jump instead of ticking down evenly).
-  useEffect(() => {
-    if (currentSceneIndex >= mystery.scenes.length) return;
-
-    sceneStartRef.current = Date.now();
-    setTimer(SCENE_DURATION_SECONDS);
-
-    const tick = () => {
-      const elapsed = Math.floor((Date.now() - sceneStartRef.current) / 1000);
-      setTimer(Math.max(SCENE_DURATION_SECONDS - elapsed, 0));
-    };
-    const interval = setInterval(tick, 250);
-    return () => clearInterval(interval);
-  }, [currentSceneIndex, mystery.scenes.length]);
-
-  // Effect to reset hint visibility when scene changes
-  useEffect(() => {
-    setShowHint(false);
-  }, [currentSceneIndex]);
+  const advanceRef = useRef<() => void>(() => {});
 
   const handleAnalyzeClick = useCallback(() => {
     if (currentSceneIndex < mystery.scenes.length - 1) {
@@ -51,12 +29,44 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
     }
   }, [currentSceneIndex, mystery.scenes.length]);
 
-  // Auto-advance to the next scene (or the question) once the timer runs out
   useEffect(() => {
-    if (currentSceneIndex < mystery.scenes.length && timer === 0) {
-      handleAnalyzeClick();
-    }
-  }, [timer, currentSceneIndex, mystery.scenes.length, handleAnalyzeClick]);
+    advanceRef.current = handleAnalyzeClick;
+  }, [handleAnalyzeClick]);
+
+  // Timer is derived from wall-clock elapsed time rather than counted in ticks,
+  // so it stays correct even when mobile browsers throttle setInterval while the
+  // screen is locked or the tab is backgrounded (which otherwise causes the
+  // countdown to skip/jump instead of ticking down evenly).
+  //
+  // Auto-advance is triggered from right here, in the same tick that detects
+  // 0 remaining, rather than in a separate effect watching `timer === 0`. A
+  // separate effect re-fires on the same commit that changes currentSceneIndex
+  // but still sees the stale timer value (it hasn't been reset to 13 yet),
+  // so it would advance a second time immediately - skipping an extra scene
+  // every time the timer naturally ran out.
+  useEffect(() => {
+    if (currentSceneIndex >= mystery.scenes.length) return;
+
+    sceneStartRef.current = Date.now();
+    setTimer(SCENE_DURATION_SECONDS);
+
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - sceneStartRef.current) / 1000);
+      const remaining = Math.max(SCENE_DURATION_SECONDS - elapsed, 0);
+      setTimer(remaining);
+      if (remaining === 0) {
+        clearInterval(interval);
+        advanceRef.current();
+      }
+    };
+    const interval = setInterval(tick, 250);
+    return () => clearInterval(interval);
+  }, [currentSceneIndex, mystery.scenes.length]);
+
+  // Effect to reset hint visibility when scene changes
+  useEffect(() => {
+    setShowHint(false);
+  }, [currentSceneIndex]);
 
   const previousScene = useCallback(() => {
     if (currentSceneIndex > 0) {

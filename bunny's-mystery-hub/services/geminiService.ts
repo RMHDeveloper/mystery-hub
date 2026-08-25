@@ -65,6 +65,8 @@ export const generateMysteryCase = async (genre: Genre): Promise<MysteryCase> =>
               generationConfig: {
                 responseMimeType: 'application/json',
                 responseSchema,
+                maxOutputTokens: 2000,
+                thinkingConfig: { thinkingBudget: 1 }, // 0 isn't accepted by this model; 1 is the minimum and fastest allowed value
               },
             }),
             signal: controller.signal,
