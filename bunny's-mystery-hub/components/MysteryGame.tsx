@@ -42,6 +42,13 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
     }
   }, [currentSceneIndex, mystery.scenes.length]);
 
+  // Auto-advance to the next scene (or the question) once the timer runs out
+  useEffect(() => {
+    if (currentSceneIndex < mystery.scenes.length && timer === 0) {
+      handleAnalyzeClick();
+    }
+  }, [timer, currentSceneIndex, mystery.scenes.length, handleAnalyzeClick]);
+
   const previousScene = useCallback(() => {
     if (currentSceneIndex > 0) {
       setCurrentSceneIndex(prev => prev - 1);
@@ -137,7 +144,7 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
             {/* Hint Button and Display for the current scene */}
             {mystery.hints && mystery.hints[currentSceneIndex] && (
               <div className="w-full flex flex-col items-center gap-y-1.5 mt-3">
-                <Button onClick={toggleHint} variant="outline-neon" className="px-6 py-1.5 text-xs">
+                <Button onClick={toggleHint} variant="outline-neon" className="px-6 py-2.5 text-xs">
                   {showHint ? 'HIDE HINT' : 'SHOW HINT'}
                 </Button>
                 {showHint && (
@@ -173,7 +180,7 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
             {/* Hint Button and Display for the Question Screen - REINTRODUCED HERE */}
             {showHintSectionForQuestion && (
               <div className="w-full flex flex-col items-center gap-y-1.5 mt-3">
-                <Button onClick={toggleHint} variant="outline-neon" className="px-6 py-1.5 text-xs">
+                <Button onClick={toggleHint} variant="outline-neon" className="px-6 py-2.5 text-xs">
                   {showHint ? 'HIDE HINT' : 'SHOW HINT'}
                 </Button>
                 {showHint && (
@@ -203,7 +210,7 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
         {/* Navigation Buttons */}
         <div className="flex justify-between w-full mt-1">
           {currentSceneIndex > 0 && isSceneActive && (
-            <Button onClick={previousScene} variant="outline-neon" className="px-6 py-2">
+            <Button onClick={previousScene} variant="outline-neon" className="px-6 py-2.5">
               PREVIOUS
             </Button>
           )}
@@ -213,15 +220,15 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
           )}
 
           {isSceneActive ? (
-            <Button onClick={handleAnalyzeClick} variant="neon" className="px-6 py-2 text-sm ml-auto">
+            <Button onClick={handleAnalyzeClick} variant="neon" className="px-6 py-2.5 text-sm ml-auto">
               {currentSceneIndex === mystery.scenes.length - 1 ? 'FINAL' : 'NEXT'}
             </Button>
           ) : (
             <div className="flex justify-between w-full"> {/* For question screen navigation */}
-              <Button onClick={() => setCurrentSceneIndex(mystery.scenes.length - 1)} variant="outline-neon" className="px-6 py-2">
+              <Button onClick={() => setCurrentSceneIndex(mystery.scenes.length - 1)} variant="outline-neon" className="px-6 py-2.5">
                 BACK TO SCENES
               </Button>
-              <Button onClick={handleSubmitAnswer} disabled={selectedOptionIndex === null} variant="neon" className="px-6 py-2 text-sm">
+              <Button onClick={handleSubmitAnswer} disabled={selectedOptionIndex === null} variant="neon" className="px-6 py-2.5 text-sm">
                 SUBMIT
               </Button>
             </div>
