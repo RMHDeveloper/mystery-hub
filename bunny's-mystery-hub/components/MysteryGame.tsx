@@ -115,7 +115,7 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
   const showHintSectionForQuestion = !isSceneActive && mystery.hints && mystery.hints[3]; 
 
   return (
-    <div className="relative w-full h-screen h-[100dvh] flex flex-col items-center overflow-hidden font-sans">
+    <div className="relative w-full h-screen h-[100dvh] flex flex-col items-center justify-center overflow-hidden font-sans">
       {/* Background Image */}
       <div
         className="fixed inset-0 z-0 bg-cover bg-center"
@@ -129,8 +129,9 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
         <Header onRestart={onRestart} />
       </div>
 
-      {/* Main Content Area - scrolls internally so header/nav never move */}
-      <div className="relative z-20 flex-1 min-h-0 w-full overflow-y-auto flex flex-col items-center gap-y-1.5 max-w-lg lg:max-w-xl px-4 mx-auto">
+      {/* Main Content Area - sized to its content (no forced gap to the nav bar below);
+          shrinks and scrolls internally only if content is too tall to fit, so header/nav never move */}
+      <div className="relative z-20 min-h-0 w-full overflow-y-auto flex flex-col items-center gap-y-1.5 max-w-lg lg:max-w-xl px-4 mx-auto">
         {/* Scene Progress Indicators */}
         {currentSceneIndex < mystery.scenes.length + 1 && ( // +1 to show dots even for question screen
           <div className="flex space-x-2 shrink-0">
