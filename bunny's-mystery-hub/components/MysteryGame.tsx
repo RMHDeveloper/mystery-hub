@@ -115,7 +115,7 @@ const MysteryGame: React.FC<MysteryGameProps> = ({ mystery, onRestart }) => {
   const showHintSectionForQuestion = !isSceneActive && mystery.hints && mystery.hints[3]; 
 
   return (
-    <div className="relative w-full h-screen h-[100dvh] flex flex-col items-center justify-center overflow-hidden font-sans">
+    <div className="relative w-full h-screen h-[100dvh] flex flex-col items-center justify-start overflow-hidden font-sans">
       {/* Background Image */}
       <div
         className="fixed inset-0 z-0 bg-cover bg-center"
