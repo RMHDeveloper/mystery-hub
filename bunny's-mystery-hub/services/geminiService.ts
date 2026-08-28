@@ -5,13 +5,13 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 const GEMINI_MODEL = 'gemini-3.6-flash';
 
-// Vite replaces `import.meta.env.*` in both dev and build; it only replaces
-// `process.env.*` at build time. Read the Vite var first (used locally and can
-// be set on Vercel too), then fall back to process.env for the existing
-// build-time-injected GEMINI_API_KEY.
+// Vite replaces `import.meta.env.*` in both dev and build, but only replaces
+// `process.env.GEMINI_API_KEY` at build time (via `define` in vite.config).
+// In dev the left side resolves from .env.local's VITE_GEMINI_API_KEY and
+// short-circuits; in the production build `process.env.GEMINI_API_KEY` is
+// statically replaced with the key string, so no `process` reference remains.
 const GEMINI_API_KEY =
-  import.meta.env.VITE_GEMINI_API_KEY ||
-  (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined);
+  import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 
 const buildPrompt = (genre: Genre): string => `You are a "Hardboiled Noir" Mystery Engine. Your goal is to generate high-stakes, atmospheric crime cases that keep the player on the edge of their seat.
 
