@@ -5,6 +5,14 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 const GEMINI_MODEL = 'gemini-3.6-flash';
 
+// Vite replaces `import.meta.env.*` in both dev and build; it only replaces
+// `process.env.*` at build time. Read the Vite var first (used locally and can
+// be set on Vercel too), then fall back to process.env for the existing
+// build-time-injected GEMINI_API_KEY.
+const GEMINI_API_KEY =
+  import.meta.env.VITE_GEMINI_API_KEY ||
+  (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined);
+
 const buildPrompt = (genre: Genre): string => `You are a "Hardboiled Noir" Mystery Engine. Your goal is to generate high-stakes, atmospheric crime cases that keep the player on the edge of their seat.
 
 NARRATIVE STYLE:
@@ -41,7 +49,7 @@ const responseSchema = {
 };
 
 export const generateMysteryCase = async (genre: Genre): Promise<MysteryCase> => {
-  if (!process.env.GEMINI_API_KEY) {
+  if (!GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY environment variable is not set.");
   }
 
@@ -56,7 +64,7 @@ export const generateMysteryCase = async (genre: Genre): Promise<MysteryCase> =>
       let response: Response;
       try {
         response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
